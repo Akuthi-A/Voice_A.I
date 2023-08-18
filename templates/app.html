@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Microphone Recording</title>
+</head>
+<body>
+<div class="app_body">
+    <h1>Microphone Recording</h1>
+
+    <p>
+        <button id="btnStart">START RECORDING</button>
+        &nbsp;&nbsp;&nbsp;&nbsp;
+        <button id="btnStop" disabled>STOP RECORDING</button>
+    </p>
+    
+    <audio id="audioPlayer" controls></audio>
+</div>
+<script src="script.js"></script>
+</body>
+</html>
+
+<script>
+const startButton = document.getElementById('btnStart');
+const stopButton = document.getElementById('btnStop');
+const audioPlayer = document.getElementById('audioPlayer');
+
+let mediaRecorder;
+let recordedChunks = [];
+
+startButton.addEventListener('click', async () => {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+    mediaRecorder = new MediaRecorder(stream);
+    
+    mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+            recordedChunks.push(event.data);
+        }
+    };
+
+    mediaRecorder.onstop = () => {
+        const audioBlob = new Blob(recordedChunks, { type: 'audio/webm' });
+        audioPlayer.src = URL.createObjectURL(audioBlob);
+    };
+
+    mediaRecorder.start();
+
+    startButton.disabled = true;
+    stopButton.disabled = false;
+});
+
+stopButton.addEventListener('click', () => {
+    mediaRecorder.stop();
+    
+    startButton.disabled = false;
+    stopButton.disabled = true;
+});
+</script>
