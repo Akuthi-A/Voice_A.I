@@ -15,47 +15,81 @@
         &nbsp;&nbsp;&nbsp;&nbsp;
         <button id="btnStop" disabled>STOP RECORDING</button>
     </p>
-    
+    <form method="POST" action="{{url_for('submitted_field')}}">
     <audio id="audioPlayer" controls></audio>
+    <a id="downloadLink" style="display: none">Download Recorded Audio</a>
+    <br />
+    <input type="text" name="file_name" id="filenameDisplay" placeholder="Selected Audio File" readonly>
+    <input type="file" id="file_link" style="display: none">
+    <br />
+    <button type="submit">submit</button>
+    <p>{{err}}</p>
+    </form>
+    
+    <script>
+        const startButton = document.getElementById('btnStart');
+        const stopButton = document.getElementById('btnStop');
+        const audioPlayer = document.getElementById('audioPlayer');
+        const downloadLink = document.getElementById('downloadLink');
+        const inputFile = document.getElementById('file_link');
+        const filenameDisplay = document.getElementById('filenameDisplay');
+
+        let mediaRecorder;
+        let recordedChunks = [];
+        let audioBlob = null;
+
+        startButton.addEventListener('click', async () => {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+            mediaRecorder = new MediaRecorder(stream);
+
+            mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                    recordedChunks.push(event.data);
+                }
+            };
+
+            mediaRecorder.onstop = () => {
+                audioBlob = new Blob(recordedChunks, { type: 'audio/webm' });
+                audioPlayer.src = URL.createObjectURL(audioBlob);
+                
+                // Display the download link
+                downloadLink.href = URL.createObjectURL(audioBlob);
+                //downloadLink.style.display = 'block';
+
+                // Enable the input and submit button
+                //inputFile.style.display = 'block';
+
+                // Update the filename display
+                filenameDisplay.value = 'recorded_audio.webm';
+            };
+
+            mediaRecorder.start();
+
+            startButton.disabled = true;
+            stopButton.disabled = false;
+        });
+
+        stopButton.addEventListener('click', () => {
+            mediaRecorder.stop();
+
+            startButton.disabled = false;
+            stopButton.disabled = true;
+        });
+
+        inputFile.addEventListener('change', (event) => {
+            // Attach the recorded audio as a File to the input element
+            if (audioBlob) {
+                const recordedAudioFile = new File([audioBlob], 'recorded_audio.webm', { type: 'audio/webm' });
+                event.target.files = [recordedAudioFile];
+
+                // Update the filename display with the selected filename
+                filenameDisplay.value = recordedAudioFile.name;
+            }
+        });
+    </script>
+
 </div>
-<script src="script.js"></script>
 </body>
 </html>
 
-<script>
-const startButton = document.getElementById('btnStart');
-const stopButton = document.getElementById('btnStop');
-const audioPlayer = document.getElementById('audioPlayer');
-
-let mediaRecorder;
-let recordedChunks = [];
-
-startButton.addEventListener('click', async () => {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-
-    mediaRecorder = new MediaRecorder(stream);
-    
-    mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-            recordedChunks.push(event.data);
-        }
-    };
-
-    mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(recordedChunks, { type: 'audio/webm' });
-        audioPlayer.src = URL.createObjectURL(audioBlob);
-    };
-
-    mediaRecorder.start();
-
-    startButton.disabled = true;
-    stopButton.disabled = false;
-});
-
-stopButton.addEventListener('click', () => {
-    mediaRecorder.stop();
-    
-    startButton.disabled = false;
-    stopButton.disabled = true;
-});
-</script>
